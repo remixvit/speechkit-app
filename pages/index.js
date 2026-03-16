@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 
-// Динамически импортируем RecordRTC только на клиенте
 let RecordRTC;
 
+const MODES = [
+  { id: 'toggle', label: 'Переключение', hint_idle: 'Нажми пробел или кнопку', hint_rec: 'Нажми ещё раз — остановить' },
+  { id: 'hold',   label: 'Удержание',    hint_idle: 'Зажми пробел или кнопку', hint_rec: 'Отпусти — остановить' },
+];
+
 export default function Home() {
+  const [mode, setMode] = useState('toggle');
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -14,47 +19,41 @@ export default function Home() {
 
   const recorderRef = useRef(null);
   const streamRef = useRef(null);
-  const analyserRef = useRef(null);
   const animFrameRef = useRef(null);
+  const isRecordingRef = useRef(false);
+  const isLoadingRef = useRef(false);
+  const spaceHeldRef = useRef(false);
 
-  // Анимация волны
+  useEffect(() => { isRecordingRef.current = isRecording; }, [isRecording]);
+  useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
+
   const startWaveAnimation = useCallback((stream) => {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 64;
-    analyserRef.current = analyser;
-
     const source = audioCtx.createMediaStreamSource(stream);
     source.connect(analyser);
-
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
     const draw = () => {
       analyser.getByteFrequencyData(dataArray);
-      const bars = Array.from(dataArray.slice(0, 32)).map(v => Math.max(2, (v / 255) * 60));
-      setWaveData(bars);
+      setWaveData(Array.from(dataArray.slice(0, 32)).map(v => Math.max(2, (v / 255) * 60)));
       animFrameRef.current = requestAnimationFrame(draw);
     };
     draw();
   }, []);
 
   const stopWaveAnimation = useCallback(() => {
-    if (animFrameRef.current) {
-      cancelAnimationFrame(animFrameRef.current);
-    }
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     setWaveData(Array(32).fill(2));
   }, []);
 
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
+    if (isRecordingRef.current || isLoadingRef.current) return;
     setError('');
     try {
-      if (!RecordRTC) {
-        RecordRTC = (await import('recordrtc')).default;
-      }
-
+      if (!RecordRTC) RecordRTC = (await import('recordrtc')).default;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-
       const recorder = new RecordRTC(stream, {
         type: 'audio',
         mimeType: 'audio/wav',
@@ -62,33 +61,25 @@ export default function Home() {
         desiredSampRate: 16000,
         numberOfAudioChannels: 1,
       });
-
       recorder.startRecording();
       recorderRef.current = recorder;
-
       startWaveAnimation(stream);
       setIsRecording(true);
-    } catch (err) {
+    } catch {
       setError('Нет доступа к микрофону. Проверь разрешения браузера.');
     }
-  };
+  }, [startWaveAnimation]);
 
-  const stopRecording = () => {
-    if (!recorderRef.current) return;
-
+  const stopRecording = useCallback(() => {
+    if (!recorderRef.current || !isRecordingRef.current) return;
     stopWaveAnimation();
     setIsRecording(false);
     setIsLoading(true);
 
     recorderRef.current.stopRecording(async () => {
       const blob = recorderRef.current.getBlob();
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
 
-      // Останавливаем треки микрофона
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
-      }
-
-      // Конвертируем в base64
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64 = reader.result.split(',')[1];
@@ -98,14 +89,10 @@ export default function Home() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ audio: base64 }),
           });
-
           const data = await res.json();
-          if (data.error) {
-            setError(data.error);
-          } else {
-            setTranscript(data.result || '(тишина)');
-          }
-        } catch (err) {
+          if (data.error) setError(data.error);
+          else setTranscript(data.result || '(тишина)');
+        } catch {
           setError('Ошибка при отправке запроса. Проверь подключение.');
         } finally {
           setIsLoading(false);
@@ -113,20 +100,54 @@ export default function Home() {
       };
       reader.readAsDataURL(blob);
     });
-  };
+  }, [stopWaveAnimation]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.code !== 'Space') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      e.preventDefault();
+      if (isLoadingRef.current) return;
+      if (mode === 'toggle') {
+        if (isRecordingRef.current) stopRecording();
+        else startRecording();
+      } else {
+        if (!spaceHeldRef.current && !isRecordingRef.current) {
+          spaceHeldRef.current = true;
+          startRecording();
+        }
+      }
+    };
+    const onKeyUp = (e) => {
+      if (e.code !== 'Space') return;
+      if (mode === 'hold') {
+        spaceHeldRef.current = false;
+        if (isRecordingRef.current) stopRecording();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, [mode, startRecording, stopRecording]);
+
+  const handleBtnClick = () => { if (mode === 'toggle') { if (isRecording) stopRecording(); else startRecording(); } };
+  const handleBtnMouseDown = () => { if (mode === 'hold') startRecording(); };
+  const handleBtnMouseUp = () => { if (mode === 'hold') stopRecording(); };
+  const handleBtnTouchStart = (e) => { e.preventDefault(); if (mode === 'hold') startRecording(); };
+  const handleBtnTouchEnd = (e) => { e.preventDefault(); if (mode === 'hold') stopRecording(); };
 
   const copyToClipboard = () => {
-    if (!transcript) return;
     navigator.clipboard.writeText(transcript).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
-  const clearTranscript = () => {
-    setTranscript('');
-    setError('');
-  };
+  const currentMode = MODES.find(m => m.id === mode);
+  const hint = isLoading ? 'Распознаю...' : isRecording ? currentMode.hint_rec : currentMode.hint_idle;
 
   return (
     <>
@@ -136,11 +157,9 @@ export default function Home() {
       </Head>
 
       <div className="container">
-        {/* Фоновые элементы */}
         <div className="bg-grid" />
         <div className="bg-glow" />
 
-        {/* Шапка */}
         <header className="header">
           <div className="logo">
             <span className="logo-dot" />
@@ -149,26 +168,42 @@ export default function Home() {
           <span className="logo-sub">powered by Yandex Cloud</span>
         </header>
 
-        {/* Основная область */}
         <main className="main">
-          {/* Визуализатор волны */}
-          <div className={`waveform ${isRecording ? 'active' : ''}`}>
-            {waveData.map((h, i) => (
-              <div
-                key={i}
-                className="bar"
-                style={{ height: `${h}px` }}
-              />
+          <div className="mode-switcher">
+            {MODES.map(m => (
+              <button
+                key={m.id}
+                className={"mode-btn" + (mode === m.id ? ' active' : '')}
+                onClick={() => { if (!isRecording && !isLoading) setMode(m.id); }}
+                disabled={isRecording || isLoading}
+              >
+                {m.id === 'toggle' ? (
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                    <path d="M17 7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h10c2.76 0 5-2.24 5-5s-2.24-5-5-5zm0 8H7c-1.65 0-3-1.35-3-3s1.35-3 3-3h10c1.65 0 3 1.35 3 3s-1.35 3-3 3zm0-4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                    <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4z"/>
+                  </svg>
+                )}
+                {m.label}
+              </button>
             ))}
           </div>
 
-          {/* Кнопка записи */}
+          <div className={"waveform" + (isRecording ? ' active' : '')}>
+            {waveData.map((h, i) => (
+              <div key={i} className="bar" style={{ height: h + 'px' }} />
+            ))}
+          </div>
+
           <button
-            className={`record-btn ${isRecording ? 'recording' : ''} ${isLoading ? 'loading' : ''}`}
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
+            className={"record-btn" + (isRecording ? ' recording' : '') + (isLoading ? ' loading' : '')}
+            onClick={handleBtnClick}
+            onMouseDown={handleBtnMouseDown}
+            onMouseUp={handleBtnMouseUp}
+            onTouchStart={handleBtnTouchStart}
+            onTouchEnd={handleBtnTouchEnd}
             disabled={isLoading}
           >
             <div className="btn-ring" />
@@ -189,16 +224,11 @@ export default function Home() {
             </div>
           </button>
 
-          {/* Подпись кнопки */}
-          <p className="hint">
-            {isLoading
-              ? 'Распознаю...'
-              : isRecording
-              ? 'Отпусти, чтобы остановить'
-              : 'Зажми и говори'}
-          </p>
+          <div className="hint-wrap">
+            <p className="hint">{hint}</p>
+            <p className="hint-key"><kbd>Space</kbd> или кнопка</p>
+          </div>
 
-          {/* Ошибка */}
           {error && (
             <div className="error-box">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -208,33 +238,20 @@ export default function Home() {
             </div>
           )}
 
-          {/* Результат */}
           {transcript && (
             <div className="result-card">
               <div className="result-header">
                 <span className="result-label">РЕЗУЛЬТАТ</span>
                 <div className="result-actions">
-                  <button className={`action-btn ${copied ? 'success' : ''}`} onClick={copyToClipboard}>
+                  <button className={"action-btn" + (copied ? ' success' : '')} onClick={copyToClipboard}>
                     {copied ? (
-                      <>
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                        </svg>
-                        Скопировано
-                      </>
+                      <><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Скопировано</>
                     ) : (
-                      <>
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                          <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                        </svg>
-                        Копировать
-                      </>
+                      <><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>Копировать</>
                     )}
                   </button>
-                  <button className="action-btn clear-btn" onClick={clearTranscript}>
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                    </svg>
+                  <button className="action-btn clear-btn" onClick={() => { setTranscript(''); setError(''); }}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                     Очистить
                   </button>
                 </div>
@@ -246,292 +263,49 @@ export default function Home() {
       </div>
 
       <style jsx>{`
-        .container {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-          padding: 0 24px 80px;
-          overflow: hidden;
-        }
-
-        .bg-grid {
-          position: fixed;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(0,229,200,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,229,200,0.03) 1px, transparent 1px);
-          background-size: 40px 40px;
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .bg-glow {
-          position: fixed;
-          top: -200px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 600px;
-          height: 600px;
-          background: radial-gradient(circle, rgba(0,229,200,0.06) 0%, transparent 70%);
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .header {
-          position: relative;
-          z-index: 1;
-          width: 100%;
-          max-width: 600px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 32px 0 0;
-        }
-
-        .logo {
-          font-family: var(--mono);
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--accent);
-          letter-spacing: 0.2em;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .logo-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--accent);
-          box-shadow: 0 0 12px var(--accent-glow);
-        }
-
-        .logo-sub {
-          font-family: var(--mono);
-          font-size: 11px;
-          color: var(--text-muted);
-          letter-spacing: 0.05em;
-        }
-
-        .main {
-          position: relative;
-          z-index: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 32px;
-          width: 100%;
-          max-width: 600px;
-          padding-top: 80px;
-        }
-
-        /* Волна */
-        .waveform {
-          display: flex;
-          align-items: center;
-          gap: 3px;
-          height: 64px;
-        }
-
-        .bar {
-          width: 4px;
-          border-radius: 2px;
-          background: var(--text-dim);
-          transition: height 0.05s ease, background 0.3s ease;
-        }
-
-        .waveform.active .bar {
-          background: var(--accent);
-          box-shadow: 0 0 8px var(--accent-glow);
-        }
-
-        /* Кнопка записи */
-        .record-btn {
-          position: relative;
-          width: 100px;
-          height: 100px;
-          border: none;
-          background: none;
-          cursor: pointer;
-          outline: none;
-          -webkit-tap-highlight-color: transparent;
-          user-select: none;
-        }
-
-        .record-btn:disabled {
-          cursor: default;
-        }
-
-        .btn-ring {
-          position: absolute;
-          inset: 0;
-          border-radius: 50%;
-          border: 1.5px solid var(--border);
-          transition: all 0.3s ease;
-        }
-
-        .record-btn:not(:disabled):hover .btn-ring {
-          border-color: var(--accent);
-          box-shadow: 0 0 20px var(--accent-glow);
-          transform: scale(1.08);
-        }
-
-        .record-btn.recording .btn-ring {
-          border-color: var(--red);
-          box-shadow: 0 0 30px var(--red-glow);
-          animation: pulse 1.2s ease-in-out infinite;
-        }
-
-        .btn-inner {
-          position: absolute;
-          inset: 12px;
-          border-radius: 50%;
-          background: var(--surface2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-muted);
-          transition: all 0.3s ease;
-          border: 1px solid var(--border);
-        }
-
-        .record-btn:not(:disabled):hover .btn-inner {
-          background: var(--accent-dim);
-          color: var(--accent);
-          border-color: var(--accent);
-        }
-
-        .record-btn.recording .btn-inner {
-          background: rgba(255, 61, 90, 0.12);
-          color: var(--red);
-          border-color: var(--red);
-        }
-
-        .record-btn.loading .btn-inner {
-          color: var(--accent);
-        }
-
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.15); opacity: 0.7; }
-        }
-
-        .spinner {
-          animation: spin 1s linear infinite;
-          width: 24px;
-          height: 24px;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .hint {
-          font-family: var(--mono);
-          font-size: 12px;
-          color: var(--text-muted);
-          letter-spacing: 0.05em;
-          text-align: center;
-        }
-
-        /* Ошибка */
-        .error-box {
-          width: 100%;
-          background: rgba(255, 61, 90, 0.08);
-          border: 1px solid rgba(255, 61, 90, 0.25);
-          border-radius: 10px;
-          padding: 14px 18px;
-          color: var(--red);
-          font-family: var(--mono);
-          font-size: 12px;
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          line-height: 1.5;
-        }
-
-        /* Результат */
-        .result-card {
-          width: 100%;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          overflow: hidden;
-          animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .result-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 16px;
-          border-bottom: 1px solid var(--border);
-          background: var(--surface2);
-        }
-
-        .result-label {
-          font-family: var(--mono);
-          font-size: 10px;
-          color: var(--accent);
-          letter-spacing: 0.15em;
-        }
-
-        .result-actions {
-          display: flex;
-          gap: 8px;
-        }
-
-        .action-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 5px 12px;
-          border-radius: 6px;
-          border: 1px solid var(--border);
-          background: transparent;
-          color: var(--text-muted);
-          font-family: var(--mono);
-          font-size: 11px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          letter-spacing: 0.02em;
-        }
-
-        .action-btn:hover {
-          border-color: var(--accent);
-          color: var(--accent);
-          background: var(--accent-dim);
-        }
-
-        .action-btn.success {
-          border-color: var(--accent);
-          color: var(--accent);
-          background: var(--accent-dim);
-        }
-
-        .clear-btn:hover {
-          border-color: var(--red);
-          color: var(--red);
-          background: rgba(255, 61, 90, 0.08);
-        }
-
-        .result-text {
-          padding: 20px;
-          font-family: var(--display);
-          font-size: 17px;
-          line-height: 1.7;
-          color: var(--text);
-          word-break: break-word;
-        }
+        .container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 24px 80px; overflow: hidden; }
+        .bg-grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(0,229,200,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,200,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+        .bg-glow { position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,229,200,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+        .header { position: relative; z-index: 1; width: 100%; max-width: 600px; display: flex; align-items: center; justify-content: space-between; padding: 32px 0 0; }
+        .logo { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.2em; display: flex; align-items: center; gap: 10px; }
+        .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+        .logo-sub { font-family: var(--mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em; }
+        .main { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 32px; width: 100%; max-width: 600px; padding-top: 60px; }
+        .mode-switcher { display: flex; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+        .mode-btn { display: flex; align-items: center; gap: 7px; padding: 7px 16px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s ease; }
+        .mode-btn:hover:not(:disabled) { color: var(--text); }
+        .mode-btn.active { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0,229,200,0.2); }
+        .mode-btn:disabled { opacity: 0.4; cursor: default; }
+        .waveform { display: flex; align-items: center; gap: 3px; height: 64px; }
+        .bar { width: 4px; border-radius: 2px; background: var(--text-dim); transition: height 0.05s ease, background 0.3s ease; }
+        .waveform.active .bar { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+        .record-btn { position: relative; width: 100px; height: 100px; border: none; background: none; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
+        .record-btn:disabled { cursor: default; }
+        .btn-ring { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--border); transition: all 0.3s ease; }
+        .record-btn:not(:disabled):hover .btn-ring { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); transform: scale(1.08); }
+        .record-btn.recording .btn-ring { border-color: var(--red); box-shadow: 0 0 30px var(--red-glow); animation: pulse 1.2s ease-in-out infinite; }
+        .btn-inner { position: absolute; inset: 12px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.3s ease; border: 1px solid var(--border); }
+        .record-btn:not(:disabled):hover .btn-inner { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+        .record-btn.recording .btn-inner { background: rgba(255, 61, 90, 0.12); color: var(--red); border-color: var(--red); }
+        .record-btn.loading .btn-inner { color: var(--accent); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.7; } }
+        .spinner { animation: spin 1s linear infinite; width: 24px; height: 24px; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .hint-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .hint { font-family: var(--mono); font-size: 12px; color: var(--text-muted); letter-spacing: 0.05em; text-align: center; }
+        .hint-key { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+        kbd { display: inline-block; padding: 1px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text-muted); font-family: var(--mono); font-size: 10px; }
+        .error-box { width: 100%; background: rgba(255, 61, 90, 0.08); border: 1px solid rgba(255, 61, 90, 0.25); border-radius: 10px; padding: 14px 18px; color: var(--red); font-family: var(--mono); font-size: 12px; display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; }
+        .result-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .result-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+        .result-label { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 0.15em; }
+        .result-actions { display: flex; gap: 8px; }
+        .action-btn { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 11px; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.02em; }
+        .action-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .action-btn.success { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .clear-btn:hover { border-color: var(--red); color: var(--red); background: rgba(255, 61, 90, 0.08); }
+        .result-text { padding: 20px; font-family: var(--display); font-size: 17px; line-height: 1.7; color: var(--text); word-break: break-word; }
       `}</style>
     </>
   );
