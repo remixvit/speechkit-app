@@ -238,7 +238,7 @@ export default function Home() {
           <div className="logo"><span className="logo-dot" />SPEECHKIT</div>
           <div className="header-right">
             <button className={"icon-btn" + (showHistory ? ' active' : '')} onClick={() => setShowHistory(v => !v)} title="История">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                 <path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7V3zm-1 5v5l4 2.5-.75 1.23L11 14V8h1z"/>
               </svg>
               {history.length > 0 && <span className="badge">{history.length}</span>}
@@ -303,9 +303,9 @@ export default function Home() {
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="31.4" strokeDashoffset="10" />
                 </svg>
               ) : isRecording ? (
-                <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
               ) : (
-                <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40">
                   <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a7 7 0 0 0 14 0h2a9 9 0 0 1-8 8.94V22h-2v-2.06A9 9 0 0 1 3 11h2z" />
                 </svg>
               )}
@@ -396,90 +396,90 @@ export default function Home() {
       </div>
 
       <style jsx>{`
-        .container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 24px 80px; overflow: hidden; }
-        .bg-grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(0,229,200,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,200,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
-        .bg-glow { position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,229,200,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+        .container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 40px 100px; overflow: hidden; }
+        .bg-grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(0,229,200,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,200,0.03) 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; z-index: 0; }
+        .bg-glow { position: fixed; top: -250px; left: 50%; transform: translateX(-50%); width: 900px; height: 900px; background: radial-gradient(circle, rgba(0,229,200,0.07) 0%, transparent 70%); pointer-events: none; z-index: 0; }
 
-        .header { position: relative; z-index: 1; width: 100%; max-width: 640px; display: flex; align-items: center; justify-content: space-between; padding: 32px 0 0; }
-        .logo { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.2em; display: flex; align-items: center; gap: 10px; }
-        .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
-        .logo-sub { font-family: var(--mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em; }
-        .header-right { display: flex; align-items: center; gap: 14px; }
+        .header { position: relative; z-index: 1; width: 100%; max-width: 860px; display: flex; align-items: center; justify-content: space-between; padding: 44px 0 0; }
+        .logo { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--accent); letter-spacing: 0.2em; display: flex; align-items: center; gap: 12px; }
+        .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px var(--accent-glow); }
+        .logo-sub { font-family: var(--mono); font-size: 13px; color: var(--text-muted); letter-spacing: 0.05em; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
 
-        .icon-btn { position: relative; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; }
+        .icon-btn { position: relative; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; }
         .icon-btn:hover, .icon-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-        .badge { position: absolute; top: -5px; right: -5px; background: var(--accent); color: var(--bg); font-family: var(--mono); font-size: 9px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .badge { position: absolute; top: -6px; right: -6px; background: var(--accent); color: var(--bg); font-family: var(--mono); font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-        .main { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 28px; width: 100%; max-width: 640px; padding-top: 48px; }
+        .main { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 36px; width: 100%; max-width: 860px; padding-top: 60px; }
 
         /* Settings row */
-        .settings-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        .seg-group { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px; }
-        .seg-btn { padding: 6px 14px; border-radius: 6px; border: none; background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+        .settings-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .seg-group { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; gap: 3px; }
+        .seg-btn { padding: 9px 20px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 13px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
         .seg-btn:hover:not(:disabled) { color: var(--text); }
         .seg-btn.active { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0,229,200,0.2); }
         .seg-btn:disabled { opacity: 0.4; cursor: default; }
 
-        .toggle-group { display: flex; gap: 6px; }
-        .toggle-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 11px; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+        .toggle-group { display: flex; gap: 8px; }
+        .toggle-btn { display: flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 13px; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
         .toggle-btn:hover { border-color: var(--accent); color: var(--text); }
         .toggle-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 
         /* Waveform */
-        .waveform { display: flex; align-items: center; gap: 3px; height: 64px; }
-        .bar { width: 4px; border-radius: 2px; background: var(--text-dim); transition: height 0.05s ease, background 0.3s ease; }
-        .waveform.active .bar { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+        .waveform { display: flex; align-items: center; gap: 4px; height: 90px; }
+        .bar { width: 5px; border-radius: 3px; background: var(--text-dim); transition: height 0.05s ease, background 0.3s ease; }
+        .waveform.active .bar { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
 
         /* Record button */
-        .record-btn { position: relative; width: 100px; height: 100px; border: none; background: none; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
+        .record-btn { position: relative; width: 148px; height: 148px; border: none; background: none; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
         .record-btn:disabled { cursor: default; }
-        .btn-ring { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--border); transition: all 0.3s ease; }
-        .record-btn:not(:disabled):hover .btn-ring { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); transform: scale(1.08); }
-        .record-btn.recording .btn-ring { border-color: var(--red); box-shadow: 0 0 30px var(--red-glow); animation: pulse 1.2s ease-in-out infinite; }
-        .btn-inner { position: absolute; inset: 12px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.3s ease; border: 1px solid var(--border); }
+        .btn-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--border); transition: all 0.3s ease; }
+        .record-btn:not(:disabled):hover .btn-ring { border-color: var(--accent); box-shadow: 0 0 28px var(--accent-glow); transform: scale(1.08); }
+        .record-btn.recording .btn-ring { border-color: var(--red); box-shadow: 0 0 40px var(--red-glow); animation: pulse 1.2s ease-in-out infinite; }
+        .btn-inner { position: absolute; inset: 16px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.3s ease; border: 1px solid var(--border); }
         .record-btn:not(:disabled):hover .btn-inner { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
         .record-btn.recording .btn-inner { background: rgba(255, 61, 90, 0.12); color: var(--red); border-color: var(--red); }
         .record-btn.loading .btn-inner { color: var(--accent); }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.7; } }
-        .spinner { animation: spin 1s linear infinite; width: 24px; height: 24px; }
+        .spinner { animation: spin 1s linear infinite; width: 34px; height: 34px; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         /* Timer & hint */
-        .hint-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-        .timer { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(0,229,200,0.2); border-radius: 20px; padding: 4px 12px; transition: all 0.3s ease; }
+        .hint-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .timer { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 13px; color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(0,229,200,0.2); border-radius: 24px; padding: 6px 16px; transition: all 0.3s ease; }
         .timer.warning { color: var(--red); background: rgba(255,61,90,0.1); border-color: rgba(255,61,90,0.3); }
-        .hint { font-family: var(--mono); font-size: 12px; color: var(--text-muted); letter-spacing: 0.05em; text-align: center; }
-        .hint-key { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
-        kbd { display: inline-block; padding: 1px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text-muted); font-family: var(--mono); font-size: 10px; }
+        .hint { font-family: var(--mono); font-size: 14px; color: var(--text-muted); letter-spacing: 0.05em; text-align: center; }
+        .hint-key { font-family: var(--mono); font-size: 13px; color: var(--text-dim); }
+        kbd { display: inline-block; padding: 2px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface2); color: var(--text-muted); font-family: var(--mono); font-size: 12px; }
 
         /* Error */
-        .error-box { width: 100%; background: rgba(255, 61, 90, 0.08); border: 1px solid rgba(255, 61, 90, 0.25); border-radius: 10px; padding: 14px 18px; color: var(--red); font-family: var(--mono); font-size: 12px; display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; }
+        .error-box { width: 100%; background: rgba(255, 61, 90, 0.08); border: 1px solid rgba(255, 61, 90, 0.25); border-radius: 12px; padding: 18px 22px; color: var(--red); font-family: var(--mono); font-size: 14px; display: flex; align-items: flex-start; gap: 12px; line-height: 1.5; }
 
         /* Result card */
-        .result-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; animation: slideUp 0.3s ease; }
+        .result-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .result-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-        .result-label { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 0.15em; }
-        .result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .action-btn { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 11px; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.02em; white-space: nowrap; }
+        .result-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+        .result-label { font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: 0.15em; }
+        .result-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .action-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 13px; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.02em; white-space: nowrap; }
         .action-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
         .action-btn.success { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
         .clear-btn:hover { border-color: var(--red); color: var(--red); background: rgba(255, 61, 90, 0.08); }
-        .result-text { padding: 20px; font-family: var(--display); font-size: 17px; line-height: 1.7; color: var(--text); word-break: break-word; }
+        .result-text { padding: 26px; font-family: var(--display); font-size: 20px; line-height: 1.75; color: var(--text); word-break: break-word; }
 
         /* History */
-        .history-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; animation: slideUp 0.3s ease; }
-        .history-empty { padding: 24px; font-family: var(--mono); font-size: 12px; color: var(--text-muted); text-align: center; }
-        .history-list { list-style: none; max-height: 400px; overflow-y: auto; }
-        .history-item { position: relative; padding: 14px 40px 14px 16px; border-bottom: 1px solid var(--border); cursor: default; transition: background 0.15s ease; }
+        .history-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; animation: slideUp 0.3s ease; }
+        .history-empty { padding: 32px; font-family: var(--mono); font-size: 14px; color: var(--text-muted); text-align: center; }
+        .history-list { list-style: none; max-height: 480px; overflow-y: auto; }
+        .history-item { position: relative; padding: 18px 52px 18px 20px; border-bottom: 1px solid var(--border); cursor: default; transition: background 0.15s ease; }
         .history-item:last-child { border-bottom: none; }
         .history-item:hover { background: var(--surface2); }
-        .history-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .history-date { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
-        .history-lang { font-family: var(--mono); font-size: 9px; color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(0,229,200,0.2); border-radius: 4px; padding: 1px 6px; }
-        .history-text { font-family: var(--display); font-size: 14px; color: var(--text); line-height: 1.5; cursor: pointer; }
+        .history-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .history-date { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+        .history-lang { font-family: var(--mono); font-size: 11px; color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(0,229,200,0.2); border-radius: 4px; padding: 2px 8px; }
+        .history-text { font-family: var(--display); font-size: 16px; color: var(--text); line-height: 1.5; cursor: pointer; }
         .history-text:hover { color: var(--accent); }
-        .history-del { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--text-dim); cursor: pointer; transition: all 0.15s ease; }
+        .history-del { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-dim); cursor: pointer; transition: all 0.15s ease; }
         .history-del:hover { border-color: rgba(255,61,90,0.3); color: var(--red); background: rgba(255,61,90,0.08); }
       `}</style>
     </>
