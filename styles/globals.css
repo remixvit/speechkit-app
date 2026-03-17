@@ -1,0 +1,63 @@
+/* styles/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #080b0f;
+  --surface: #0f1318;
+  --surface2: #161c24;
+  --border: #1e2730;
+  --accent: #00e5c8;
+  --accent-dim: rgba(0, 229, 200, 0.12);
+  --accent-glow: rgba(0, 229, 200, 0.35);
+  --red: #ff3d5a;
+  --red-glow: rgba(255, 61, 90, 0.4);
+  --text: #e8edf2;
+  --text-muted: #5a6878;
+  --text-dim: #2e3a48;
+  --mono: 'Space Mono', monospace;
+  --display: 'Syne', sans-serif;
+}
+
+/* Принудительно тёмная тема */
+html {
+  color-scheme: dark;
+  background-color: #080b0f !important;
+}
+
+html, body {
+  background: #080b0f !important;
+  color: #e8edf2 !important;
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Сбрасываем light-mode переопределения */
+@media (prefers-color-scheme: light) {
+  html, body {
+    background: #080b0f !important;
+    color: #e8edf2 !important;
+  }
+}
+
+::selection {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
