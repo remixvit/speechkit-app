@@ -50,6 +50,8 @@ export default function Home() {
   const [elapsed, setElapsed] = useState(0);
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [devices, setDevices] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState("");
 
   const recorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -64,6 +66,21 @@ export default function Home() {
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   useEffect(() => { setHistory(loadHistory()); }, []);
+
+  useEffect(() => {
+    const loadDevices = async () => {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        const all = await navigator.mediaDevices.enumerateDevices();
+        const mics = all.filter(d => d.kind === 'audioinput');
+        setDevices(mics);
+        if (mics.length > 0) setSelectedDevice(mics[0].deviceId);
+      } catch {}
+    };
+    loadDevices();
+    navigator.mediaDevices.addEventListener('devicechange', loadDevices);
+    return () => navigator.mediaDevices.removeEventListener('devicechange', loadDevices);
+  }, []);
 
   const startWaveAnimation = useCallback((stream) => {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -90,7 +107,8 @@ export default function Home() {
     setElapsed(0);
     try {
       if (!RecordRTC) RecordRTC = (await import('recordrtc')).default;
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioConstraints = selectedDevice ? { deviceId: { exact: selectedDevice } } : true;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
       streamRef.current = stream;
       const recorder = new RecordRTC(stream, {
         type: 'audio', mimeType: 'audio/wav',
@@ -283,6 +301,25 @@ export default function Home() {
                 Автокопия
               </button>
             </div>
+
+            {/* Выбор микрофона */}
+            {devices.length > 1 && (
+              <div className="mic-select-wrap">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a7 7 0 0 0 14 0h2a9 9 0 0 1-8 8.94V22h-2v-2.06A9 9 0 0 1 3 11h2z"/></svg>
+                <select
+                  className="mic-select"
+                  value={selectedDevice}
+                  onChange={e => setSelectedDevice(e.target.value)}
+                  disabled={isRecording || isLoading}
+                >
+                  {devices.map(d => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label || `Микрофон ${d.deviceId.slice(0, 8)}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Волна */}
