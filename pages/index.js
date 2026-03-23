@@ -503,6 +503,12 @@ export default function Home() {
         .toggle-btn { display: flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 13px; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
         .toggle-btn:hover { border-color: var(--accent); color: var(--text); }
         .toggle-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .mic-select-wrap { gap: 8px; cursor: pointer; }
+        .mic-select-wrap.disabled { opacity: 0.4; pointer-events: none; }
+        .mic-select { background: transparent; border: none; color: var(--text-muted); font-family: var(--mono); font-size: 13px; outline: none; cursor: pointer; max-width: 160px; appearance: none; -webkit-appearance: none; }
+        .mic-select option { background: #161c24; color: #e8edf2; }
+        .mic-meter { width: 50px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; flex-shrink: 0; align-self: center; }
+        .mic-meter-fill { height: 100%; border-radius: 2px; background: var(--accent); box-shadow: 0 0 4px var(--accent-glow); transition: width 0.05s ease; }
 
         /* Waveform */
         .waveform { display: flex; align-items: center; gap: 4px; height: 90px; }
