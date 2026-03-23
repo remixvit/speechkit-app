@@ -342,8 +342,8 @@ export default function Home() {
                 Автокопия
               </button>
               {devices.length > 1 && (
-                <div className="toggle-btn mic-select-wrap">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a7 7 0 0 0 14 0h2a9 9 0 0 1-8 8.94V22h-2v-2.06A9 9 0 0 1 3 11h2z"/></svg>
+                <label className={"toggle-btn mic-select-wrap" + (isRecording || isLoading ? " disabled" : "")}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style={{flexShrink:0}}><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a7 7 0 0 0 14 0h2a9 9 0 0 1-8 8.94V22h-2v-2.06A9 9 0 0 1 3 11h2z"/></svg>
                   <select
                     className="mic-select"
                     value={selectedDevice}
@@ -359,7 +359,7 @@ export default function Home() {
                   <div className="mic-meter">
                     <div className="mic-meter-fill" style={{ width: micLevel + "%" }} />
                   </div>
-                </div>
+                </label>
               )}
             </div>
           </div>
@@ -492,7 +492,7 @@ export default function Home() {
         .main { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 36px; width: 100%; max-width: 860px; padding-top: 60px; }
 
         /* Settings row */
-        .settings-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .settings-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; row-gap: 8px; }
         .seg-group { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; gap: 3px; }
         .seg-btn { padding: 9px 20px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 13px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
         .seg-btn:hover:not(:disabled) { color: var(--text); }
