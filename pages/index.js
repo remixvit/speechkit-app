@@ -15,6 +15,7 @@ const LANGS = [
 
 const MAX_SECONDS = 58;
 const STORAGE_KEY = 'speechkit_history';
+const MIC_KEY = 'speechkit_mic';
 
 function loadHistory() {
   try {
@@ -75,7 +76,9 @@ export default function Home() {
         const all = await navigator.mediaDevices.enumerateDevices();
         const mics = all.filter(d => d.kind === 'audioinput');
         setDevices(mics);
-        if (mics.length > 0) setSelectedDevice(mics[0].deviceId);
+        const saved = localStorage.getItem(MIC_KEY);
+        const found = saved && mics.find(d => d.deviceId === saved);
+        setSelectedDevice(found ? saved : (mics.length > 0 ? mics[0].deviceId : ''));
       } catch {}
     };
     loadDevices();
@@ -347,7 +350,7 @@ export default function Home() {
                 <select
                   className="mic-select"
                   value={selectedDevice}
-                  onChange={e => setSelectedDevice(e.target.value)}
+                  onChange={e => { setSelectedDevice(e.target.value); localStorage.setItem(MIC_KEY, e.target.value); }}
                   disabled={isRecording || isLoading}
                 >
                   {devices.map(d => (
