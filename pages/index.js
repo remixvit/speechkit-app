@@ -52,6 +52,7 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false);
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState("");
+  const [micLevel, setMicLevel] = useState(0);
 
   const recorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -81,6 +82,43 @@ export default function Home() {
     navigator.mediaDevices.addEventListener('devicechange', loadDevices);
     return () => navigator.mediaDevices.removeEventListener('devicechange', loadDevices);
   }, []);
+
+  // Мониторинг уровня микрофона (вне записи)
+  useEffect(() => {
+    if (!selectedDevice || typeof window === 'undefined') return;
+
+    let audioCtx, analyser, source, stream, raf;
+
+    const start = async () => {
+      try {
+        const constraints = selectedDevice ? { deviceId: { exact: selectedDevice } } : true;
+        stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        const tick = () => {
+          analyser.getByteFrequencyData(data);
+          const avg = data.reduce((s, v) => s + v, 0) / data.length;
+          setMicLevel(Math.min(100, avg * 2.5));
+          raf = requestAnimationFrame(tick);
+        };
+        tick();
+        micMonitorRef.current = { audioCtx, stream };
+      } catch {}
+    };
+
+    start();
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      if (audioCtx) audioCtx.close();
+      setMicLevel(0);
+    };
+  }, [selectedDevice]);
 
   const startWaveAnimation = useCallback((stream) => {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -130,7 +168,7 @@ export default function Home() {
     } catch {
       setError('Нет доступа к микрофону. Проверь разрешения браузера.');
     }
-  }, [startWaveAnimation]);
+  }, [startWaveAnimation, selectedDevice]);
 
   const stopRecordingFn = useCallback(() => {
     if (!recorderRef.current || !isRecordingRef.current) return;
@@ -318,6 +356,10 @@ export default function Home() {
                     </option>
                   ))}
                 </select>
+                <div className="mic-meter">
+                  <div className="mic-meter-fill" style={{ width: micLevel + "%" }} />
+                </div>
+                <span className="mic-level-label">{Math.round(micLevel)}%</span>
               </div>
             )}
           </div>
