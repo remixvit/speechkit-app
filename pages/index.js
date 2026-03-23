@@ -331,7 +331,7 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Тогглы */}
+            {/* Тогглы + микрофон */}
             <div className="toggle-group">
               <button className={"toggle-btn" + (accumulate ? ' active' : '')} onClick={() => setAccumulate(v => !v)} title="Добавлять к предыдущему тексту">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -341,30 +341,27 @@ export default function Home() {
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                 Автокопия
               </button>
-            </div>
-
-            {/* Выбор микрофона */}
-            {devices.length > 1 && (
-              <div className="mic-select-wrap">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a7 7 0 0 0 14 0h2a9 9 0 0 1-8 8.94V22h-2v-2.06A9 9 0 0 1 3 11h2z"/></svg>
-                <select
-                  className="mic-select"
-                  value={selectedDevice}
-                  onChange={e => { setSelectedDevice(e.target.value); localStorage.setItem(MIC_KEY, e.target.value); }}
-                  disabled={isRecording || isLoading}
-                >
-                  {devices.map(d => (
-                    <option key={d.deviceId} value={d.deviceId}>
-                      {d.label || `Микрофон ${d.deviceId.slice(0, 8)}`}
-                    </option>
-                  ))}
-                </select>
-                <div className="mic-meter">
-                  <div className="mic-meter-fill" style={{ width: micLevel + "%" }} />
+              {devices.length > 1 && (
+                <div className="toggle-btn mic-select-wrap">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a7 7 0 0 0 14 0h2a9 9 0 0 1-8 8.94V22h-2v-2.06A9 9 0 0 1 3 11h2z"/></svg>
+                  <select
+                    className="mic-select"
+                    value={selectedDevice}
+                    onChange={e => { setSelectedDevice(e.target.value); localStorage.setItem(MIC_KEY, e.target.value); }}
+                    disabled={isRecording || isLoading}
+                  >
+                    {devices.map(d => (
+                      <option key={d.deviceId} value={d.deviceId}>
+                        {d.label || `Микрофон ${d.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mic-meter">
+                    <div className="mic-meter-fill" style={{ width: micLevel + "%" }} />
+                  </div>
                 </div>
-                <span className="mic-level-label">{Math.round(micLevel)}%</span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Волна */}
