@@ -2,23 +2,22 @@ export const config = {
   api: { bodyParser: { sizeLimit: '10mb' } },
 };
 
-// Находим offset PCM-данных в WAV файле по сигнатуре "data" чанка
 function findPcmOffset(buffer) {
-  // WAV структура: RIFF header (12 bytes) + chunks
-  // Ищем чанк "data" и возвращаем offset данных после его заголовка
-  let offset = 12; // пропускаем RIFF header
+  let offset = 12;
   while (offset < buffer.length - 8) {
     const chunkId = buffer.slice(offset, offset + 4).toString('ascii');
     const chunkSize = buffer.readUInt32LE(offset + 4);
-    if (chunkId === 'data') {
-      return offset + 8; // после ID (4) + size (4)
-    }
+    if (chunkId === 'data') return offset + 8;
     offset += 8 + chunkSize;
-    // выравнивание на 2 байта
     if (chunkSize % 2 !== 0) offset++;
   }
-  // Fallback: стандартный 44-байтный заголовок
   return 44;
+}
+
+// Читаем sample rate прямо из WAV заголовка (байты 24-27)
+function getSampleRate(buffer) {
+  if (buffer.length < 28) return 16000;
+  return buffer.readUInt32LE(24);
 }
 
 export default async function handler(req, res) {
@@ -34,13 +33,16 @@ export default async function handler(req, res) {
 
     const audioBuffer = Buffer.from(audio, 'base64');
     const pcmOffset = findPcmOffset(audioBuffer);
+    const sampleRate = getSampleRate(audioBuffer);
     const pcmData = audioBuffer.slice(pcmOffset);
+
+    console.log(`WAV info: total=${audioBuffer.length}, pcmOffset=${pcmOffset}, pcmSize=${pcmData.length}, sampleRate=${sampleRate}, lang=${lang}`);
 
     const url = new URL('https://stt.api.cloud.yandex.net/speech/v1/stt:recognize');
     url.searchParams.set('folderId', folderId);
     url.searchParams.set('lang', lang);
     url.searchParams.set('format', 'lpcm');
-    url.searchParams.set('sampleRateHertz', '16000');
+    url.searchParams.set('sampleRateHertz', String(sampleRate));
 
     const response = await fetch(url.toString(), {
       method: 'POST',
@@ -49,6 +51,8 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
+    console.log('Yandex response:', JSON.stringify(data));
+
     if (!response.ok) return res.status(response.status).json({ error: data.message || 'Ошибка Yandex SpeechKit' });
     return res.status(200).json({ result: data.result });
   } catch (error) {
